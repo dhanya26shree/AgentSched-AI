@@ -6,7 +6,7 @@ import com.google.gson.JsonParser;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import service.AppointmentService;
-import service.GeminiService;
+import service.LlmService;
 import service.PatientService;
 import model.Patient;
 import model.MedicalRecord;
@@ -23,13 +23,13 @@ import java.util.Base64;
 public class ApiHandler implements HttpHandler {
 
     private final AppointmentService appointmentService;
-    private final GeminiService geminiService;
+    private final LlmService llmService;
     private final PatientService patientService;
     private final Gson gson;
 
     public ApiHandler() {
         this.appointmentService = new AppointmentService();
-        this.geminiService = new GeminiService();
+        this.llmService = new LlmService();
         this.patientService = new PatientService();
         this.gson = new Gson();
     }
@@ -70,7 +70,7 @@ public class ApiHandler implements HttpHandler {
             System.out.println("[API /api/chat] Received history length: " + requestBody.length());
             
             // Execute agentic loop
-            String responseJson = geminiService.chat(requestBody);
+            String responseJson = llmService.chat(requestBody);
             
             sendJsonResponse(exchange, 200, responseJson);
         } else if ("/api/appointments".equals(path) && "GET".equalsIgnoreCase(method)) {

@@ -18,14 +18,14 @@ import java.time.LocalDate;
 import java.util.Objects;
 import java.util.List;
 
-public class GeminiService {
+public class LlmService {
 
     private final AppointmentService appointmentService;
     private final PatientService patientService;
     private final HttpClient httpClient;
     private final Gson gson;
 
-    public GeminiService() {
+    public LlmService() {
         this.appointmentService = new AppointmentService();
         this.patientService = new PatientService();
         this.httpClient = HttpClient.newHttpClient();
@@ -392,8 +392,6 @@ public class GeminiService {
                     int pId = patientService.createPatient(newPat);
                     return "{\"status\":\"SUCCESS\",\"patientId\":" + pId + "}";
 
-
-
                 default:
                     return "Error: Unknown tool function name '" + name + "'.";
             }
@@ -404,7 +402,7 @@ public class GeminiService {
     }
 
     /**
-     * Declares tools/functions available to the Gemini model.
+     * Declares tools/functions available to the model.
      */
     private JsonArray getToolsDeclaration() {
         JsonArray tools = new JsonArray();
@@ -556,8 +554,6 @@ public class GeminiService {
         cpParams.add("required", cpReq);
         createPat.add("parameters", cpParams);
         functionDeclarations.add(createPat);
-
-
 
         return tools;
     }
