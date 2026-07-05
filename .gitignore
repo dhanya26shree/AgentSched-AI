@@ -1,0 +1,15 @@
+# Dependencies
+frontend/node_modules/
+backend/bin/
+
+# Configuration
+backend/.env
+
+# Uploads
+backend/uploads/
+
+# IDE & OS files
+.idea/
+.vscode/
+*.log
+Thumbs.db

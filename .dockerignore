@@ -1,0 +1,17 @@
+# Ignore local environment variables with passwords
+.env
+.env.example
+
+# Ignore local compiled class folders
+bin/
+
+# Ignore local runtime logs or script runners
+*.log
+run.bat
+
+# Ignore git repository settings
+.git/
+.gitignore
+.dockerignore
+README.md
+schema.sql
