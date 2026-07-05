@@ -52,9 +52,9 @@ public class LlmService {
             // Translate the Gemini chat history format from frontend into OpenAI/Groq format
             JsonArray messages = convertHistoryToGroq(chatHistoryJson, getSystemInstructionText());
             
-            // Build the agent reasoning loop (max 5 iterations)
+            // Build the agent reasoning loop (max 8 iterations to allow multi-step workflows)
             int iterations = 0;
-            while (iterations < 5) {
+            while (iterations < 8) {
                 iterations++;
                 
                 // Build OpenAI-compatible request payload
