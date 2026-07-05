@@ -7,7 +7,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # Stage 2: Build Backend
-FROM openjdk:17-slim AS backend-builder
+FROM eclipse-temurin:17-jdk-jammy AS backend-builder
 WORKDIR /app
 COPY backend/lib/ backend/lib/
 COPY backend/src/ backend/src/
@@ -15,7 +15,7 @@ RUN mkdir -p backend/bin
 RUN javac -encoding UTF-8 -cp "backend/lib/mysql-connector-j-8.4.0.jar:backend/lib/gson-2.11.0.jar" -d backend/bin backend/src/model/*.java backend/src/db/*.java backend/src/service/*.java backend/src/controller/*.java backend/src/Main.java
 
 # Stage 3: Runtime stage
-FROM openjdk:17-slim
+FROM eclipse-temurin:17-jdk-jammy
 WORKDIR /app/backend
 
 # Copy Java libraries and compiled classes
