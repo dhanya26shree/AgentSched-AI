@@ -75,15 +75,49 @@ public class LlmService {
 
                 HttpResponse<String> response = null;
                 int retryCount = 0;
-                while (retryCount < 3) {
+                while (retryCount < 4) {
                     response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
                     if (response.statusCode() != 503 && response.statusCode() != 429) {
                         break;
                     }
                     retryCount++;
-                    System.out.println("[GROQ API] Received status code " + response.statusCode() + ". Retrying attempt " + retryCount + "/3 in 2 seconds...");
+                    if (retryCount >= 4) {
+                        break;
+                    }
+                    
+                    // Default exponential backoff (starting at 3s, then 5s, then 9s)
+                    long sleepMs = (long) (Math.pow(2, retryCount) * 2000) + 1000;
+                    
+                    if (response.statusCode() == 429) {
+                        // Try to parse the Retry-After header (in seconds) or check response body
+                        String retryAfterHeader = response.headers().firstValue("retry-after").orElse(null);
+                        if (retryAfterHeader != null) {
+                            try {
+                                double seconds = Double.parseDouble(retryAfterHeader);
+                                sleepMs = (long) (seconds * 1000) + 500; // Add 500ms safety buffer
+                                System.out.println("[GROQ API] Rate limited. Retry-After header says wait: " + seconds + "s. Sleeping for " + sleepMs + "ms...");
+                            } catch (NumberFormatException ignored) {}
+                        } else {
+                            // Fallback: parse wait time from JSON body message if present
+                            String body = response.body();
+                            if (body != null && body.contains("Please try again in ")) {
+                                int idx = body.indexOf("Please try again in ");
+                                int endIdx = body.indexOf("s", idx + "Please try again in ".length());
+                                if (idx != -1 && endIdx != -1) {
+                                    try {
+                                        String secStr = body.substring(idx + "Please try again in ".length(), endIdx).trim();
+                                        double seconds = Double.parseDouble(secStr);
+                                        sleepMs = (long) (seconds * 1000) + 1000; // Add 1s safety buffer
+                                        System.out.println("[GROQ API] Rate limited. Parsed from body to wait: " + seconds + "s. Sleeping for " + sleepMs + "ms...");
+                                    } catch (Exception ignored) {}
+                                }
+                            }
+                        }
+                    }
+                    
+                    System.out.println("[GROQ API] Received status code " + response.statusCode() + ". Retrying attempt " + retryCount + "/4 in " + (sleepMs / 1000.0) + " seconds...");
                     try {
-                        Thread.sleep(2000);
+                        Thread.sleep(sleepMs);
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                     }
@@ -174,6 +208,7 @@ public class LlmService {
 
     /**
      * Translates Gemini-format chatHistory (from frontend React) into standard OpenAI/Groq messages.
+     * Prunes history to the last 8 messages to stay within the free tier's low TPM (Tokens Per Minute) limit.
      */
     private JsonArray convertHistoryToGroq(String chatHistoryJson, String systemInstruction) {
         JsonArray contents = JsonParser.parseString(chatHistoryJson).getAsJsonArray();
@@ -185,8 +220,9 @@ public class LlmService {
         sysMsg.addProperty("content", systemInstruction);
         messages.add(sysMsg);
         
-        // 2. Map existing conversation history elements
-        for (int i = 0; i < contents.size(); i++) {
+        // 2. Map existing conversation history elements (limit to last 8 to optimize tokens)
+        int startIndex = Math.max(0, contents.size() - 8);
+        for (int i = startIndex; i < contents.size(); i++) {
             JsonObject item = contents.get(i).getAsJsonObject();
             String role = item.get("role").getAsString();
             
