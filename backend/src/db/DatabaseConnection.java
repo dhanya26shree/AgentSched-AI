@@ -30,7 +30,7 @@ public class DatabaseConnection {
         config.put("DB_USER", "root");
         config.put("DB_PASSWORD", "");
         config.put("GROQ_API_KEY", "");
-        config.put("GROQ_MODEL", "llama-3.3-70b-specdec");
+        config.put("GROQ_MODEL", "llama-3.3-70b-versatile");
 
         try (BufferedReader reader = new BufferedReader(new FileReader(".env"))) {
             String line;

@@ -44,7 +44,7 @@ public class LlmService {
 
         String model = DatabaseConnection.get("GROQ_MODEL");
         if (model == null || model.trim().isEmpty() || model.contains("gemini")) {
-            model = "llama-3.3-70b-specdec"; // Default to Groq high-quality reasoning model
+            model = "llama-3.3-70b-versatile"; // Default to Groq high-quality reasoning model
         }
         System.out.println("[GROQ AI CHAT] Calling Groq API using model: '" + model + "'");
 
