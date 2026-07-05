@@ -14,7 +14,7 @@ export default function Home({ onNavigate }) {
             <div className="hero-card">
                 <div className="hero-body">
                     <h2>Welcome to AgentSched AI</h2>
-                    <p>Experience the next generation of medical scheduling. Powered by Gemini, our autonomous AI agent plans, reasons, and executes appointment booking directly via conversational English.</p>
+                    <p>Experience the next generation of medical scheduling. Powered by Groq Llama, our autonomous AI agent plans, reasons, and executes appointment booking directly via conversational English.</p>
                     <div className="hero-actions-container">
                         <button className="btn btn-primary" onClick={() => onNavigate('chat')}>
                             Chat with AI Agent

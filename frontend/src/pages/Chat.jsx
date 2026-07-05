@@ -90,7 +90,7 @@ export default function Chat({ messages, onSendMessage, typing, systemDate }) {
                         <h3>System Context</h3>
                         <div className="info-card">
                             <p><strong>Assigned:</strong> AgentSched AI</p>
-                            <p><strong>Model:</strong> Gemini 2.5 Flash</p>
+                            <p><strong>Model:</strong> Llama 3.3 (Groq)</p>
                             <p><strong>Today's Date:</strong> <span id="chat-system-date">{systemDate}</span></p>
                         </div>
                     </div>
