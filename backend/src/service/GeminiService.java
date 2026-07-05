@@ -139,9 +139,9 @@ public class GeminiService {
                     modelMsg.add("parts", modelParts);
                     contents.add(modelMsg);
 
-                    // 2. The tool's function response message
+                    // 2. The tool's function response message (must use role: "user" in Gemini API)
                     JsonObject toolMsg = new JsonObject();
-                    toolMsg.addProperty("role", "function");
+                    toolMsg.addProperty("role", "user");
                     JsonArray toolParts = new JsonArray();
                     
                     JsonObject funcResponseObj = new JsonObject();
