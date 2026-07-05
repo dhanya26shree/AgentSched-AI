@@ -39,11 +39,7 @@ public class LlmService {
     public String chat(String chatHistoryJson) {
         String apiKey = DatabaseConnection.get("GROQ_API_KEY");
         if (apiKey == null || apiKey.trim().isEmpty() || apiKey.equals("your_groq_api_key_here")) {
-            // Fallback: Check if user kept key as GEMINI_API_KEY
-            apiKey = DatabaseConnection.get("GEMINI_API_KEY");
-            if (apiKey == null || apiKey.trim().isEmpty() || apiKey.equals("your_gemini_api_key_here")) {
-                return gson.toJson(createErrorMessage("Error: Groq API Key is not configured. Please set GROQ_API_KEY in your environment variables."));
-            }
+            return gson.toJson(createErrorMessage("Error: Groq API Key is not configured. Please set GROQ_API_KEY in your environment variables."));
         }
 
         String model = DatabaseConnection.get("GROQ_MODEL");

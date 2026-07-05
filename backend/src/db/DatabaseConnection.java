@@ -29,8 +29,6 @@ public class DatabaseConnection {
         config.put("DB_URL", "jdbc:mysql://localhost:3306/appointment_agent?useSSL=false&serverTimezone=UTC");
         config.put("DB_USER", "root");
         config.put("DB_PASSWORD", "");
-        config.put("GEMINI_API_KEY", "");
-        config.put("GEMINI_MODEL", "gemini-2.5-flash");
         config.put("GROQ_API_KEY", "");
         config.put("GROQ_MODEL", "llama-3.3-70b-specdec");
 
