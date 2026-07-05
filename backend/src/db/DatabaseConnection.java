@@ -30,6 +30,7 @@ public class DatabaseConnection {
         config.put("DB_USER", "root");
         config.put("DB_PASSWORD", "");
         config.put("GEMINI_API_KEY", "");
+        config.put("GEMINI_MODEL", "gemini-2.5-flash");
 
         try (BufferedReader reader = new BufferedReader(new FileReader(".env"))) {
             String line;
