@@ -43,9 +43,11 @@ public class GeminiService {
         }
 
         String model = DatabaseConnection.get("GEMINI_MODEL");
+        System.out.println("[AI CHAT] DatabaseConnection resolved GEMINI_MODEL as: '" + model + "'");
         if (model == null || model.trim().isEmpty()) {
             model = "gemini-2.5-flash"; // Default to 2.5 flash
         }
+        System.out.println("[AI CHAT] Calling Gemini API using model: '" + model + "'");
 
         // Setup API Endpoint (always use v1beta to ensure systemInstruction and tools support across all models)
         String apiVersion = "v1beta";
