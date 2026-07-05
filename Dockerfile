@@ -1,30 +1,31 @@
-# Stage 1: Build stage
-FROM openjdk:17-slim AS builder
+# Stage 1: Build Frontend
+FROM node:18-alpine AS frontend-builder
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
 
+# Stage 2: Build Backend
+FROM openjdk:17-slim AS backend-builder
 WORKDIR /app
+COPY backend/lib/ backend/lib/
+COPY backend/src/ backend/src/
+RUN mkdir -p backend/bin
+RUN javac -encoding UTF-8 -cp "backend/lib/mysql-connector-j-8.4.0.jar:backend/lib/gson-2.11.0.jar" -d backend/bin backend/src/model/*.java backend/src/db/*.java backend/src/service/*.java backend/src/controller/*.java backend/src/Main.java
 
-# Copy the libraries and source code
-COPY lib/ lib/
-COPY src/ src/
-
-# Create the binary target directory
-RUN mkdir bin
-
-# Compile all Java files (using Linux path separator ':' for classpath)
-RUN javac -encoding UTF-8 -cp "lib/mysql-connector-j-8.4.0.jar:lib/gson-2.11.0.jar" -d bin src/model/*.java src/db/*.java src/service/*.java src/controller/*.java src/Main.java
-
-# Stage 2: Runtime stage
+# Stage 3: Runtime stage
 FROM openjdk:17-slim
+WORKDIR /app/backend
 
-WORKDIR /app
-
-# Copy compiled classes, static libraries, and public web assets from the builder stage
-COPY --from=builder /app/bin bin
-COPY lib/ lib/
-COPY public/ public/
+# Copy Java libraries and compiled classes
+COPY backend/lib/ lib/
+COPY --from=backend-builder /app/backend/bin bin
+# Copy built public files from frontend builder directly into the backend public folder
+COPY --from=frontend-builder /app/backend/public public
 
 # Expose port 8080
 EXPOSE 8080
 
-# Start the server (using Linux path separator ':' for classpath)
+# Start server
 CMD ["java", "-cp", "bin:lib/mysql-connector-j-8.4.0.jar:lib/gson-2.11.0.jar", "Main"]
