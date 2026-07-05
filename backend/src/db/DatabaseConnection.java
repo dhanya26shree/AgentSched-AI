@@ -31,6 +31,8 @@ public class DatabaseConnection {
         config.put("DB_PASSWORD", "");
         config.put("GEMINI_API_KEY", "");
         config.put("GEMINI_MODEL", "gemini-2.5-flash");
+        config.put("GROQ_API_KEY", "");
+        config.put("GROQ_MODEL", "llama-3.3-70b-specdec");
 
         try (BufferedReader reader = new BufferedReader(new FileReader(".env"))) {
             String line;
