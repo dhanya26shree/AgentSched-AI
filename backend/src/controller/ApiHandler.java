@@ -3,7 +3,6 @@ package controller;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.JsonArray;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import service.AppointmentService;
@@ -74,87 +73,6 @@ public class ApiHandler implements HttpHandler {
             String responseJson = llmService.chat(requestBody);
             
             sendJsonResponse(exchange, 200, responseJson);
-        } else if ("/api/debug-db".equals(path) && "GET".equalsIgnoreCase(method)) {
-            JsonObject debugObj = new JsonObject();
-            JsonArray envKeys = new JsonArray();
-            for (String key : System.getenv().keySet()) {
-                envKeys.add(key);
-            }
-            debugObj.add("envKeys", envKeys);
-            
-            String mysqlUrl = System.getenv("MYSQL_URL");
-            if (mysqlUrl != null) {
-                int atIdx = mysqlUrl.lastIndexOf('@');
-                if (atIdx > 0) {
-                    int colonIdx = mysqlUrl.indexOf(':', 8);
-                    if (colonIdx > 0 && colonIdx < atIdx) {
-                        debugObj.addProperty("rawMysqlUrlMasked", mysqlUrl.substring(0, colonIdx) + ":***" + mysqlUrl.substring(atIdx));
-                    } else {
-                        debugObj.addProperty("rawMysqlUrlMasked", "present_but_unparseable_creds");
-                    }
-                } else {
-                    // Safe to show raw because there is no @ symbol (no embedded username/password)
-                    debugObj.addProperty("rawMysqlUrlMasked", mysqlUrl);
-                }
-            } else {
-                debugObj.addProperty("rawMysqlUrlMasked", "null");
-            }
-            
-            debugObj.addProperty("resolvedDbUrl", db.DatabaseConnection.get("DB_URL"));
-            debugObj.addProperty("resolvedDbUser", db.DatabaseConnection.get("DB_USER"));
-            
-            if (mysqlUrl != null && !mysqlUrl.isEmpty()) {
-                try {
-                    String cleanUrl = mysqlUrl;
-                    if (cleanUrl.startsWith("mysql://")) {
-                        cleanUrl = cleanUrl.substring(8);
-                    } else if (cleanUrl.startsWith("jdbc:mysql://")) {
-                        cleanUrl = cleanUrl.substring(13);
-                    }
-                    
-                    String hostPart = cleanUrl;
-                    int atIdx = cleanUrl.lastIndexOf('@');
-                    debugObj.addProperty("testParseAtIdx", atIdx);
-                    
-                    if (atIdx > 0) {
-                        hostPart = cleanUrl.substring(atIdx + 1);
-                    }
-                    
-                    int slashIdx = hostPart.indexOf('/');
-                    debugObj.addProperty("testParseSlashIdx", slashIdx);
-                    if (slashIdx > 0) {
-                        String hostPort = hostPart.substring(0, slashIdx);
-                        String dbName = hostPart.substring(slashIdx + 1);
-                        int qIdx = dbName.indexOf('?');
-                        if (qIdx > 0) {
-                            dbName = dbName.substring(0, qIdx);
-                        }
-                        String host = hostPort;
-                        String port = "3306";
-                        int hostColonIdx = hostPort.indexOf(':');
-                        if (hostColonIdx > 0) {
-                            host = hostPort.substring(0, hostColonIdx);
-                            port = hostPort.substring(hostColonIdx + 1);
-                        }
-                        String jdbcUrl = "jdbc:mysql://" + host + ":" + port + "/" + dbName + "?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
-                        debugObj.addProperty("testParseJdbcUrlResult", jdbcUrl);
-                    }
-                } catch (Exception e) {
-                    debugObj.addProperty("testParseException", e.getMessage());
-                }
-            }
-            
-            try (java.sql.Connection conn = db.DatabaseConnection.getConnection()) {
-                debugObj.addProperty("dbConnected", true);
-                debugObj.addProperty("dbMetadata", conn.getMetaData().getDatabaseProductVersion());
-            } catch (Exception e) {
-                debugObj.addProperty("dbConnected", false);
-                debugObj.addProperty("connectionError", e.getMessage());
-                StringWriter sw = new StringWriter();
-                e.printStackTrace(new PrintWriter(sw));
-                debugObj.addProperty("connectionStackTrace", sw.toString());
-            }
-            sendJsonResponse(exchange, 200, gson.toJson(debugObj));
         } else if ("/api/appointments".equals(path) && "GET".equalsIgnoreCase(method)) {
             // Fetch list of appointments
             String json = gson.toJson(appointmentService.getAllAppointments());
