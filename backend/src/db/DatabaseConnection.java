@@ -61,29 +61,88 @@ public class DatabaseConnection {
             }
         }
 
-        // 4. Detect Railway default MySQL environment variables if DB_URL is not set or is pointing to localhost
-        String dbUrl = config.get("DB_URL");
-        if (dbUrl.contains("localhost") || dbUrl.isEmpty()) {
-            String mysqlHost = System.getenv("MYSQLHOST");
-            String mysqlPort = System.getenv("MYSQLPORT");
-            String mysqlUser = System.getenv("MYSQLUSER");
-            String mysqlPassword = System.getenv("MYSQLPASSWORD");
-            String mysqlDatabase = System.getenv("MYSQLDATABASE");
+        // 4. Try parsing unified MYSQL_URL if present (typical in Railway)
+        String mysqlUrl = System.getenv("MYSQL_URL");
+        if (mysqlUrl != null && !mysqlUrl.isEmpty()) {
+            parseMysqlUrl(mysqlUrl);
+        } else {
+            // 5. Fallback to individual Railway default MySQL environment variables if DB_URL is not set or is pointing to localhost
+            String dbUrl = config.get("DB_URL");
+            if (dbUrl.contains("localhost") || dbUrl.isEmpty()) {
+                String mysqlHost = System.getenv("MYSQLHOST");
+                String mysqlPort = System.getenv("MYSQLPORT");
+                String mysqlUser = System.getenv("MYSQLUSER");
+                String mysqlPassword = System.getenv("MYSQLPASSWORD");
+                String mysqlDatabase = System.getenv("MYSQLDATABASE");
 
-            if (mysqlHost != null && !mysqlHost.isEmpty()) {
-                String port = (mysqlPort != null && !mysqlPort.isEmpty()) ? mysqlPort : "3306";
-                String dbName = (mysqlDatabase != null && !mysqlDatabase.isEmpty()) ? mysqlDatabase : "railway";
-                String url = "jdbc:mysql://" + mysqlHost + ":" + port + "/" + dbName + "?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
-                config.put("DB_URL", url);
-                
-                if (mysqlUser != null && !mysqlUser.isEmpty()) {
-                    config.put("DB_USER", mysqlUser);
+                if (mysqlHost != null && !mysqlHost.isEmpty()) {
+                    String port = (mysqlPort != null && !mysqlPort.isEmpty()) ? mysqlPort : "3306";
+                    String dbName = (mysqlDatabase != null && !mysqlDatabase.isEmpty()) ? mysqlDatabase : "railway";
+                    String url = "jdbc:mysql://" + mysqlHost + ":" + port + "/" + dbName + "?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
+                    config.put("DB_URL", url);
+                    
+                    if (mysqlUser != null && !mysqlUser.isEmpty()) {
+                        config.put("DB_USER", mysqlUser);
+                    }
+                    if (mysqlPassword != null && !mysqlPassword.isEmpty()) {
+                        config.put("DB_PASSWORD", mysqlPassword);
+                    }
+                    System.out.println("[DatabaseConnection] Railway MySQL database detected. Dynamic JDBC URL: " + url);
                 }
-                if (mysqlPassword != null && !mysqlPassword.isEmpty()) {
-                    config.put("DB_PASSWORD", mysqlPassword);
-                }
-                System.out.println("[DatabaseConnection] Railway MySQL database detected. Dynamic JDBC URL: " + url);
             }
+        }
+    }
+
+    private static void parseMysqlUrl(String mysqlUrl) {
+        try {
+            String cleanUrl = mysqlUrl;
+            if (cleanUrl.startsWith("mysql://")) {
+                cleanUrl = cleanUrl.substring(8);
+            } else if (cleanUrl.startsWith("jdbc:mysql://")) {
+                cleanUrl = cleanUrl.substring(13);
+            }
+            
+            int atIdx = cleanUrl.lastIndexOf('@');
+            if (atIdx > 0) {
+                String creds = cleanUrl.substring(0, atIdx);
+                String hostPart = cleanUrl.substring(atIdx + 1);
+                
+                // Parse credentials
+                int colonIdx = creds.indexOf(':');
+                if (colonIdx > 0) {
+                    config.put("DB_USER", creds.substring(0, colonIdx));
+                    config.put("DB_PASSWORD", creds.substring(colonIdx + 1));
+                } else {
+                    config.put("DB_USER", creds);
+                }
+                
+                // Parse host, port, database
+                int slashIdx = hostPart.indexOf('/');
+                if (slashIdx > 0) {
+                    String hostPort = hostPart.substring(0, slashIdx);
+                    String dbName = hostPart.substring(slashIdx + 1);
+                    
+                    int qIdx = dbName.indexOf('?');
+                    if (qIdx > 0) {
+                        dbName = dbName.substring(0, qIdx);
+                    }
+                    
+                    String host = hostPort;
+                    String port = "3306";
+                    int hostColonIdx = hostPort.indexOf(':');
+                    if (hostColonIdx > 0) {
+                        host = hostPort.substring(0, hostColonIdx);
+                        port = hostPort.substring(hostColonIdx + 1);
+                    }
+                    
+                    String jdbcUrl = "jdbc:mysql://" + host + ":" + port + "/" + dbName + "?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
+                    config.put("DB_URL", jdbcUrl);
+                    System.out.println("[DatabaseConnection] Successfully parsed MYSQL_URL and configured JDBC. URL: " + jdbcUrl + " User: " + config.get("DB_USER"));
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[DatabaseConnection] Error parsing MYSQL_URL: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
