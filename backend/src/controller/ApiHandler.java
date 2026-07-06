@@ -93,7 +93,8 @@ public class ApiHandler implements HttpHandler {
                         debugObj.addProperty("rawMysqlUrlMasked", "present_but_unparseable_creds");
                     }
                 } else {
-                    debugObj.addProperty("rawMysqlUrlMasked", "present_no_at_symbol");
+                    // Safe to show raw because there is no @ symbol (no embedded username/password)
+                    debugObj.addProperty("rawMysqlUrlMasked", mysqlUrl);
                 }
             } else {
                 debugObj.addProperty("rawMysqlUrlMasked", "null");
@@ -110,32 +111,33 @@ public class ApiHandler implements HttpHandler {
                     } else if (cleanUrl.startsWith("jdbc:mysql://")) {
                         cleanUrl = cleanUrl.substring(13);
                     }
+                    
+                    String hostPart = cleanUrl;
                     int atIdx = cleanUrl.lastIndexOf('@');
                     debugObj.addProperty("testParseAtIdx", atIdx);
+                    
                     if (atIdx > 0) {
-                        String creds = cleanUrl.substring(0, atIdx);
-                        String hostPart = cleanUrl.substring(atIdx + 1);
-                        int colonIdx = creds.indexOf(':');
-                        debugObj.addProperty("testParseColonIdx", colonIdx);
-                        int slashIdx = hostPart.indexOf('/');
-                        debugObj.addProperty("testParseSlashIdx", slashIdx);
-                        if (slashIdx > 0) {
-                            String hostPort = hostPart.substring(0, slashIdx);
-                            String dbName = hostPart.substring(slashIdx + 1);
-                            int qIdx = dbName.indexOf('?');
-                            if (qIdx > 0) {
-                                dbName = dbName.substring(0, qIdx);
-                            }
-                            String host = hostPort;
-                            String port = "3306";
-                            int hostColonIdx = hostPort.indexOf(':');
-                            if (hostColonIdx > 0) {
-                                host = hostPort.substring(0, hostColonIdx);
-                                port = hostPort.substring(hostColonIdx + 1);
-                            }
-                            String jdbcUrl = "jdbc:mysql://" + host + ":" + port + "/" + dbName + "?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
-                            debugObj.addProperty("testParseJdbcUrlResult", jdbcUrl);
+                        hostPart = cleanUrl.substring(atIdx + 1);
+                    }
+                    
+                    int slashIdx = hostPart.indexOf('/');
+                    debugObj.addProperty("testParseSlashIdx", slashIdx);
+                    if (slashIdx > 0) {
+                        String hostPort = hostPart.substring(0, slashIdx);
+                        String dbName = hostPart.substring(slashIdx + 1);
+                        int qIdx = dbName.indexOf('?');
+                        if (qIdx > 0) {
+                            dbName = dbName.substring(0, qIdx);
                         }
+                        String host = hostPort;
+                        String port = "3306";
+                        int hostColonIdx = hostPort.indexOf(':');
+                        if (hostColonIdx > 0) {
+                            host = hostPort.substring(0, hostColonIdx);
+                            port = hostPort.substring(hostColonIdx + 1);
+                        }
+                        String jdbcUrl = "jdbc:mysql://" + host + ":" + port + "/" + dbName + "?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
+                        debugObj.addProperty("testParseJdbcUrlResult", jdbcUrl);
                     }
                 } catch (Exception e) {
                     debugObj.addProperty("testParseException", e.getMessage());
