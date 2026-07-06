@@ -24,7 +24,7 @@ public class DatabaseConnection {
     }
 
     private static void loadEnv() {
-        // Default fallbacks
+        // 1. Fallback defaults
         config.put("PORT", "8080");
         config.put("DB_URL", "jdbc:mysql://localhost:3306/appointment_agent?useSSL=false&serverTimezone=UTC");
         config.put("DB_USER", "root");
@@ -32,6 +32,7 @@ public class DatabaseConnection {
         config.put("GROQ_API_KEY", "");
         config.put("GROQ_MODEL", "llama-3.3-70b-versatile");
 
+        // 2. Read local .env file if it exists
         try (BufferedReader reader = new BufferedReader(new FileReader(".env"))) {
             String line;
             while ((line = reader.readLine()) != null) {
@@ -46,15 +47,42 @@ public class DatabaseConnection {
                     config.put(key, val);
                 }
             }
+            System.out.println("[DatabaseConnection] Loaded environment variables from local .env file.");
         } catch (IOException e) {
-            System.out.println("No .env file found or couldn't be read. Using default configuration and system env variables.");
+            // Quietly ignore in production Docker containers where .env is absent
         }
 
-        // Allow system properties or environment variables to override
-        for (String key : config.keySet()) {
+        // 3. Override keys using system environment variables (highest priority)
+        String[] keysToCheck = {"PORT", "DB_URL", "DB_USER", "DB_PASSWORD", "GROQ_API_KEY", "GROQ_MODEL"};
+        for (String key : keysToCheck) {
             String envVal = System.getenv(key);
             if (envVal != null && !envVal.isEmpty()) {
                 config.put(key, envVal);
+            }
+        }
+
+        // 4. Detect Railway default MySQL environment variables if DB_URL is not set or is pointing to localhost
+        String dbUrl = config.get("DB_URL");
+        if (dbUrl.contains("localhost") || dbUrl.isEmpty()) {
+            String mysqlHost = System.getenv("MYSQLHOST");
+            String mysqlPort = System.getenv("MYSQLPORT");
+            String mysqlUser = System.getenv("MYSQLUSER");
+            String mysqlPassword = System.getenv("MYSQLPASSWORD");
+            String mysqlDatabase = System.getenv("MYSQLDATABASE");
+
+            if (mysqlHost != null && !mysqlHost.isEmpty()) {
+                String port = (mysqlPort != null && !mysqlPort.isEmpty()) ? mysqlPort : "3306";
+                String dbName = (mysqlDatabase != null && !mysqlDatabase.isEmpty()) ? mysqlDatabase : "railway";
+                String url = "jdbc:mysql://" + mysqlHost + ":" + port + "/" + dbName + "?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
+                config.put("DB_URL", url);
+                
+                if (mysqlUser != null && !mysqlUser.isEmpty()) {
+                    config.put("DB_USER", mysqlUser);
+                }
+                if (mysqlPassword != null && !mysqlPassword.isEmpty()) {
+                    config.put("DB_PASSWORD", mysqlPassword);
+                }
+                System.out.println("[DatabaseConnection] Railway MySQL database detected. Dynamic JDBC URL: " + url);
             }
         }
     }
@@ -67,6 +95,12 @@ public class DatabaseConnection {
         String url = get("DB_URL");
         String user = get("DB_USER");
         String password = get("DB_PASSWORD");
-        return DriverManager.getConnection(url, user, password);
+        try {
+            return DriverManager.getConnection(url, user, password);
+        } catch (SQLException e) {
+            System.err.println("[DatabaseConnection] CRITICAL ERROR: Failed to connect to MySQL database at: " + url + " (User: " + user + ")");
+            System.err.println("[DatabaseConnection] Error details: " + e.getMessage());
+            throw e;
+        }
     }
 }
