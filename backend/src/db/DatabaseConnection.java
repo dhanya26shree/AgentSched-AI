@@ -102,10 +102,13 @@ public class DatabaseConnection {
                 cleanUrl = cleanUrl.substring(13);
             }
             
+            String creds = "";
+            String hostPart = cleanUrl;
+            
             int atIdx = cleanUrl.lastIndexOf('@');
             if (atIdx > 0) {
-                String creds = cleanUrl.substring(0, atIdx);
-                String hostPart = cleanUrl.substring(atIdx + 1);
+                creds = cleanUrl.substring(0, atIdx);
+                hostPart = cleanUrl.substring(atIdx + 1);
                 
                 // Parse credentials
                 int colonIdx = creds.indexOf(':');
@@ -115,30 +118,40 @@ public class DatabaseConnection {
                 } else {
                     config.put("DB_USER", creds);
                 }
-                
-                // Parse host, port, database
-                int slashIdx = hostPart.indexOf('/');
-                if (slashIdx > 0) {
-                    String hostPort = hostPart.substring(0, slashIdx);
-                    String dbName = hostPart.substring(slashIdx + 1);
-                    
-                    int qIdx = dbName.indexOf('?');
-                    if (qIdx > 0) {
-                        dbName = dbName.substring(0, qIdx);
-                    }
-                    
-                    String host = hostPort;
-                    String port = "3306";
-                    int hostColonIdx = hostPort.indexOf(':');
-                    if (hostColonIdx > 0) {
-                        host = hostPort.substring(0, hostColonIdx);
-                        port = hostPort.substring(hostColonIdx + 1);
-                    }
-                    
-                    String jdbcUrl = "jdbc:mysql://" + host + ":" + port + "/" + dbName + "?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
-                    config.put("DB_URL", jdbcUrl);
-                    System.out.println("[DatabaseConnection] Successfully parsed MYSQL_URL and configured JDBC. URL: " + jdbcUrl + " User: " + config.get("DB_USER"));
+            } else {
+                // No credentials in URL: Fallback to separate environment variables
+                String mysqlUser = System.getenv("MYSQLUSER");
+                String mysqlPassword = System.getenv("MYSQLPASSWORD");
+                if (mysqlUser != null && !mysqlUser.isEmpty()) {
+                    config.put("DB_USER", mysqlUser);
                 }
+                if (mysqlPassword != null && !mysqlPassword.isEmpty()) {
+                    config.put("DB_PASSWORD", mysqlPassword);
+                }
+            }
+            
+            // Parse host, port, database
+            int slashIdx = hostPart.indexOf('/');
+            if (slashIdx > 0) {
+                String hostPort = hostPart.substring(0, slashIdx);
+                String dbName = hostPart.substring(slashIdx + 1);
+                
+                int qIdx = dbName.indexOf('?');
+                if (qIdx > 0) {
+                    dbName = dbName.substring(0, qIdx);
+                }
+                
+                String host = hostPort;
+                String port = "3306";
+                int hostColonIdx = hostPort.indexOf(':');
+                if (hostColonIdx > 0) {
+                    host = hostPort.substring(0, hostColonIdx);
+                    port = hostPort.substring(hostColonIdx + 1);
+                }
+                
+                String jdbcUrl = "jdbc:mysql://" + host + ":" + port + "/" + dbName + "?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
+                config.put("DB_URL", jdbcUrl);
+                System.out.println("[DatabaseConnection] Successfully parsed MYSQL_URL and configured JDBC. URL: " + jdbcUrl + " User: " + config.get("DB_USER"));
             }
         } catch (Exception e) {
             System.err.println("[DatabaseConnection] Error parsing MYSQL_URL: " + e.getMessage());
