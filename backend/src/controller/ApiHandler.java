@@ -3,6 +3,7 @@ package controller;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonArray;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import service.AppointmentService;
@@ -73,6 +74,26 @@ public class ApiHandler implements HttpHandler {
             String responseJson = llmService.chat(requestBody);
             
             sendJsonResponse(exchange, 200, responseJson);
+        } else if ("/api/debug-db".equals(path) && "GET".equalsIgnoreCase(method)) {
+            JsonObject debugObj = new JsonObject();
+            JsonArray envKeys = new JsonArray();
+            for (String key : System.getenv().keySet()) {
+                envKeys.add(key);
+            }
+            debugObj.add("envKeys", envKeys);
+            debugObj.addProperty("resolvedDbUrl", db.DatabaseConnection.get("DB_URL"));
+            debugObj.addProperty("resolvedDbUser", db.DatabaseConnection.get("DB_USER"));
+            try (java.sql.Connection conn = db.DatabaseConnection.getConnection()) {
+                debugObj.addProperty("dbConnected", true);
+                debugObj.addProperty("dbMetadata", conn.getMetaData().getDatabaseProductVersion());
+            } catch (Exception e) {
+                debugObj.addProperty("dbConnected", false);
+                debugObj.addProperty("connectionError", e.getMessage());
+                StringWriter sw = new StringWriter();
+                e.printStackTrace(new PrintWriter(sw));
+                debugObj.addProperty("connectionStackTrace", sw.toString());
+            }
+            sendJsonResponse(exchange, 200, gson.toJson(debugObj));
         } else if ("/api/appointments".equals(path) && "GET".equalsIgnoreCase(method)) {
             // Fetch list of appointments
             String json = gson.toJson(appointmentService.getAllAppointments());
