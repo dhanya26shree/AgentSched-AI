@@ -178,9 +178,16 @@ export default function PatientPortal({
                                                 return true;
                                             })
                                             .map((appt, idx) => {
+                                                const isPast = appt.appointmentDate < systemDate && appt.status !== 'CANCELLED';
                                                 let statusClass = "booked";
-                                                if (appt.status === "CANCELLED") statusClass = "cancelled";
-                                                if (appt.status === "RESCHEDULED") statusClass = "rescheduled";
+                                                let displayStatus = appt.status;
+                                                if (isPast) {
+                                                    statusClass = "completed";
+                                                    displayStatus = "COMPLETED";
+                                                } else {
+                                                    if (appt.status === "CANCELLED") statusClass = "cancelled";
+                                                    if (appt.status === "RESCHEDULED") statusClass = "rescheduled";
+                                                }
                                                 const priorityClass = appt.priority === "HIGH" ? "priority-high" : "priority-normal";
 
                                                 return (
@@ -194,10 +201,10 @@ export default function PatientPortal({
                                                         <td>Dr. {appt.doctorName}</td>
                                                         <td>{appt.appointmentDate}</td>
                                                         <td><strong>{appt.appointmentTime.substring(0, 5)}</strong></td>
-                                                        <td><span className={`pill ${statusClass}`}>{appt.status}</span></td>
+                                                        <td><span className={`pill ${statusClass}`}>{displayStatus}</span></td>
                                                         <td><span className={`pill ${priorityClass}`}>{appt.priority}</span></td>
                                                         <td>
-                                                            {appt.status !== 'CANCELLED' ? (
+                                                            {appt.status !== 'CANCELLED' && !isPast ? (
                                                                 <>
                                                                     <button 
                                                                         className="btn btn-outline" 
@@ -222,7 +229,7 @@ export default function PatientPortal({
                                                                 </>
                                                             ) : (
                                                                 <span style={{ fontSize: '0.75rem', fontStyle: 'italic', color: 'var(--text-secondary)' }}>
-                                                                    No Actions
+                                                                    {isPast ? 'No Actions (Past Date)' : 'No Actions'}
                                                                 </span>
                                                             )}
                                                         </td>

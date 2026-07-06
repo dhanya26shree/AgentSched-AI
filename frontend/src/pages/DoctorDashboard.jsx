@@ -349,9 +349,16 @@ export default function DoctorDashboard({
                                 </tr>
                             ) : (
                                 apptsList.map((appt, idx) => {
+                                    const isPast = appt.appointmentDate < systemDate && appt.status !== 'CANCELLED';
                                     let statusClass = "booked";
-                                    if (appt.status === "CANCELLED") statusClass = "cancelled";
-                                    if (appt.status === "RESCHEDULED") statusClass = "rescheduled";
+                                    let displayStatus = appt.status;
+                                    if (isPast) {
+                                        statusClass = "completed";
+                                        displayStatus = "COMPLETED";
+                                    } else {
+                                        if (appt.status === "CANCELLED") statusClass = "cancelled";
+                                        if (appt.status === "RESCHEDULED") statusClass = "rescheduled";
+                                    }
                                     const priorityClass = appt.priority === "HIGH" ? "priority-high" : "priority-normal";
 
                                     return (
@@ -373,7 +380,7 @@ export default function DoctorDashboard({
                                             <td>Dr. {appt.doctorName}</td>
                                             <td>{appt.appointmentDate}</td>
                                             <td><strong>{appt.appointmentTime.substring(0, 5)}</strong></td>
-                                            <td><span className={`pill ${statusClass}`}>{appt.status}</span></td>
+                                            <td><span className={`pill ${statusClass}`}>{displayStatus}</span></td>
                                             <td><span className={`pill ${priorityClass}`}>{appt.priority}</span></td>
                                             <td>
                                                 <div style={{ display: 'flex', gap: '8px' }}>
@@ -384,7 +391,7 @@ export default function DoctorDashboard({
                                                     >
                                                         Details Log
                                                     </button>
-                                                    {appt.status !== 'CANCELLED' && (
+                                                    {appt.status !== 'CANCELLED' && !isPast && (
                                                         <button 
                                                             className="btn btn-outline" 
                                                             style={{ padding: '4px 8px', fontSize: '0.7rem', borderColor: 'var(--color-red)', color: 'var(--color-red)' }}
@@ -463,9 +470,16 @@ export default function DoctorDashboard({
                             {appointments
                                 .filter(a => a.email.toLowerCase() === selectedPatient.email.toLowerCase())
                                 .map((appt, idx) => {
+                                    const isPast = appt.appointmentDate < systemDate && appt.status !== 'CANCELLED';
                                     let statusClass = "booked";
-                                    if (appt.status === "CANCELLED") statusClass = "cancelled";
-                                    if (appt.status === "RESCHEDULED") statusClass = "rescheduled";
+                                    let displayStatus = appt.status;
+                                    if (isPast) {
+                                        statusClass = "completed";
+                                        displayStatus = "COMPLETED";
+                                    } else {
+                                        if (appt.status === "CANCELLED") statusClass = "cancelled";
+                                        if (appt.status === "RESCHEDULED") statusClass = "rescheduled";
+                                    }
                                     return (
                                         <div 
                                             key={idx} 
@@ -480,7 +494,7 @@ export default function DoctorDashboard({
                                         >
                                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                                 <strong>Dr. {appt.doctorName}</strong>
-                                                <span className={`pill ${statusClass}`} style={{ fontSize: '0.65rem', padding: '2px 6px' }}>{appt.status}</span>
+                                                <span className={`pill ${statusClass}`} style={{ fontSize: '0.65rem', padding: '2px 6px' }}>{displayStatus}</span>
                                             </div>
                                             <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>
                                                 {appt.appointmentDate} at {appt.appointmentTime.substring(0, 5)}

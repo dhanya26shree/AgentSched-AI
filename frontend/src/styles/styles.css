@@ -1115,6 +1115,7 @@ body {
 .pill.booked { background-color: var(--color-success-glow); color: var(--color-success); border: 1px solid rgba(16,185,129,0.2); }
 .pill.rescheduled { background-color: rgba(245,158,11,0.1); color: var(--color-warning); border: 1px solid rgba(245,158,11,0.2); }
 .pill.cancelled { background-color: var(--color-error-glow); color: var(--color-error); border: 1px solid rgba(239,68,68,0.2); }
+.pill.completed { background-color: var(--color-primary-glow); color: var(--color-primary); border: 1px solid rgba(59,130,246,0.2); }
 
 .pill.priority-normal { background-color: rgba(255,255,255,0.05); color: var(--text-secondary); }
 .pill.priority-high { background-color: var(--color-purple-glow); color: var(--color-purple); border: 1px solid rgba(139,92,246,0.2); }
