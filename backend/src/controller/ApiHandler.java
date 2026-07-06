@@ -81,8 +81,67 @@ public class ApiHandler implements HttpHandler {
                 envKeys.add(key);
             }
             debugObj.add("envKeys", envKeys);
+            
+            String mysqlUrl = System.getenv("MYSQL_URL");
+            if (mysqlUrl != null) {
+                int atIdx = mysqlUrl.lastIndexOf('@');
+                if (atIdx > 0) {
+                    int colonIdx = mysqlUrl.indexOf(':', 8);
+                    if (colonIdx > 0 && colonIdx < atIdx) {
+                        debugObj.addProperty("rawMysqlUrlMasked", mysqlUrl.substring(0, colonIdx) + ":***" + mysqlUrl.substring(atIdx));
+                    } else {
+                        debugObj.addProperty("rawMysqlUrlMasked", "present_but_unparseable_creds");
+                    }
+                } else {
+                    debugObj.addProperty("rawMysqlUrlMasked", "present_no_at_symbol");
+                }
+            } else {
+                debugObj.addProperty("rawMysqlUrlMasked", "null");
+            }
+            
             debugObj.addProperty("resolvedDbUrl", db.DatabaseConnection.get("DB_URL"));
             debugObj.addProperty("resolvedDbUser", db.DatabaseConnection.get("DB_USER"));
+            
+            if (mysqlUrl != null && !mysqlUrl.isEmpty()) {
+                try {
+                    String cleanUrl = mysqlUrl;
+                    if (cleanUrl.startsWith("mysql://")) {
+                        cleanUrl = cleanUrl.substring(8);
+                    } else if (cleanUrl.startsWith("jdbc:mysql://")) {
+                        cleanUrl = cleanUrl.substring(13);
+                    }
+                    int atIdx = cleanUrl.lastIndexOf('@');
+                    debugObj.addProperty("testParseAtIdx", atIdx);
+                    if (atIdx > 0) {
+                        String creds = cleanUrl.substring(0, atIdx);
+                        String hostPart = cleanUrl.substring(atIdx + 1);
+                        int colonIdx = creds.indexOf(':');
+                        debugObj.addProperty("testParseColonIdx", colonIdx);
+                        int slashIdx = hostPart.indexOf('/');
+                        debugObj.addProperty("testParseSlashIdx", slashIdx);
+                        if (slashIdx > 0) {
+                            String hostPort = hostPart.substring(0, slashIdx);
+                            String dbName = hostPart.substring(slashIdx + 1);
+                            int qIdx = dbName.indexOf('?');
+                            if (qIdx > 0) {
+                                dbName = dbName.substring(0, qIdx);
+                            }
+                            String host = hostPort;
+                            String port = "3306";
+                            int hostColonIdx = hostPort.indexOf(':');
+                            if (hostColonIdx > 0) {
+                                host = hostPort.substring(0, hostColonIdx);
+                                port = hostPort.substring(hostColonIdx + 1);
+                            }
+                            String jdbcUrl = "jdbc:mysql://" + host + ":" + port + "/" + dbName + "?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
+                            debugObj.addProperty("testParseJdbcUrlResult", jdbcUrl);
+                        }
+                    }
+                } catch (Exception e) {
+                    debugObj.addProperty("testParseException", e.getMessage());
+                }
+            }
+            
             try (java.sql.Connection conn = db.DatabaseConnection.getConnection()) {
                 debugObj.addProperty("dbConnected", true);
                 debugObj.addProperty("dbMetadata", conn.getMetaData().getDatabaseProductVersion());
